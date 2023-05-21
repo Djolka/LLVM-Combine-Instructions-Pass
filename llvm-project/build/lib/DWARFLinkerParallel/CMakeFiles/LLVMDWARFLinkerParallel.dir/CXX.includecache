@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/user/Desktop/KK-projekat/llvm-project/llvm/include/llvm/DWARFLinkerParallel/DWARFLinker.h
+
+/home/user/Desktop/KK-projekat/llvm-project/llvm/lib/DWARFLinkerParallel/DWARFLinker.cpp
+llvm/DWARFLinkerParallel/DWARFLinker.h
+/home/user/Desktop/KK-projekat/llvm-project/llvm/lib/DWARFLinkerParallel/llvm/DWARFLinkerParallel/DWARFLinker.h
+

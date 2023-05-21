@@ -1,0 +1,22 @@
+file(REMOVE_RECURSE
+  "../../../libLLVMRISCVDesc.pdb"
+  "../../../libLLVMRISCVDesc.so"
+  "../../../libLLVMRISCVDesc.so.17git"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVAsmBackend.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVBaseInfo.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVELFObjectWriter.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVELFStreamer.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVInstPrinter.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMCAsmInfo.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMCCodeEmitter.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMCExpr.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMCObjectFileInfo.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMCTargetDesc.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVMatInt.cpp.o"
+  "CMakeFiles/LLVMRISCVDesc.dir/RISCVTargetStreamer.cpp.o"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/LLVMRISCVDesc.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

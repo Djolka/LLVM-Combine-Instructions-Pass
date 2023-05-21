@@ -1,0 +1,2 @@
+/usr/bin/ar Dqc ../../../../lib/libLLVMExegesisMips_static.a  CMakeFiles/obj.LLVMExegesisMips.dir/Target.cpp.o
+/usr/bin/ranlib -D ../../../../lib/libLLVMExegesisMips_static.a
