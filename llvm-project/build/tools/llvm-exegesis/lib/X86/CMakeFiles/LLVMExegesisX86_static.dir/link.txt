@@ -1,2 +1,0 @@
-/usr/bin/ar Dqc ../../../../lib/libLLVMExegesisX86_static.a  CMakeFiles/obj.LLVMExegesisX86.dir/Target.cpp.o CMakeFiles/obj.LLVMExegesisX86.dir/X86Counter.cpp.o
-/usr/bin/ranlib -D ../../../../lib/libLLVMExegesisX86_static.a
