@@ -55,7 +55,8 @@ namespace {
         void HandleBinaryOp(Instruction *Instr)
         {
             outs() << "binary op" << "\n";
-            outs() << *Instr << "\n";
+            
+
             //if it is constant both left and right, then apply given operation on them
             if (IsConstantInt(Instr->getOperand(0)) && IsConstantInt(Instr->getOperand(1))) {
                 outs() << "2 const values" << "\n";
@@ -63,13 +64,33 @@ namespace {
                     ValueRight = GetConstantInt(Instr->getOperand(1));
                 Value *Constant = nullptr;
 
+
                 if (isa<AddOperator>(Instr)) {
+                    //case5: add X, X is represented as (X*2) => (X << 1)
+                    if(Instr->getOperand(0) == Instr->getOperand(1)){
+                        Value *X = Instr->getOperand(0);
+                        BinaryOperator *NewInst = BinaryOperator::CreateShl(X, ConstantInt::get(X->getType(), 1));
+                        Instr->replaceAllUsesWith(NewInst);
+                        InstructionsToRemove.push_back(Instr);
+                        // Instr->eraseFromParent();//dodati u listu Instr a ne brisati
+                    }
                     Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft + ValueRight);
                 }
                 else if (isa<SubOperator>(Instr)) {
                     Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft - ValueRight);
                 }
                 else if (isa<MulOperator>(Instr)) {
+                    //case6: Multiplies with a power-of-two constant argument are transformed into shifts.
+                    if(ConstantInt *C = dyn_cast<ConstantInt>(Instr->getOperand(1))){
+                        APInt Value = C->getValue();
+                        if (Value.isPowerOf2()) {
+                            Value.logBase2();
+                            BinaryOperator *NewInst = BinaryOperator::CreateShl(Instr->getOperand(0), ConstantInt::get(Instr->getOperand(0)->getType(), Value));
+                            Instr->replaceAllUsesWith(NewInst);
+                            InstructionsToRemove.push_back(Instr);
+                            // Instr->eraseFromParent(); // //dodati u listu Instr a ne brisati
+                        }
+                    }
                     Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft * ValueRight);
                 }
                 else if (isa<SDivOperator>(Instr)) {
@@ -82,6 +103,7 @@ namespace {
             }else if (Constant *C = dyn_cast<Constant>(Instr->getOperand(0))) {
                 // outs() << "stigao u case1" << "\n";
                 // outs() << *(Instr->getOperand(0)) << "\n";
+
                 //case 1 - move constant operands of binary operation on RHS
                 Instr->setOperand(0, Instr->getOperand(1));
                 Instr->setOperand(1, C);
@@ -97,6 +119,7 @@ namespace {
 
                 int ValueLeft = GetConstantInt(Instr->getOperand(0)),
                     ValueRight = GetConstantInt(Instr->getOperand(1));
+
 
                 ConstantInt *BooleanValue = nullptr;
                 auto Pred = Cmp->getPredicate();
@@ -122,7 +145,7 @@ namespace {
 
                 if (BooleanValue != nullptr) {
                     Instr->replaceAllUsesWith(BooleanValue);
-                }
+                }            
             }
         }
 
@@ -173,8 +196,6 @@ namespace {
                 Instr->eraseFromParent();
             }
         }
-
-
 
         bool runOnFunction(Function &F) override {
         
