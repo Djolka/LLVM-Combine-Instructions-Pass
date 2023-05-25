@@ -7,6 +7,7 @@
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/IRBuilder.h"
 
 using namespace llvm;
 
@@ -22,8 +23,8 @@ namespace {
         bool IsBinaryOp(Instruction *Instr)
         {
             return isa<BinaryOperator>(Instr);
-        //    BinaryOperator *BinaryOp = dyn_cast<BinaryOperator>(Instr);
-        //    return BinaryOp != nullptr;
+             // BinaryOperator *BinaryOp = dyn_cast<BinaryOperator>(Instr);
+              //return BinaryOp != nullptr;
         }
 
         //is it compare instruction
@@ -31,6 +32,8 @@ namespace {
         {
             return isa<ICmpInst>(Instr);
         }
+
+        /*
 
         //is it branch
         bool IsBranch(Instruction *Instr)
@@ -50,106 +53,128 @@ namespace {
             ConstantInt *Constant = dyn_cast<ConstantInt>(Operand);
             return Constant->getSExtValue();
         }
+        */
 
-        //handling binary operators
         void HandleBinaryOp(Instruction *Instr)
         {
-            outs() << "binary op" << "\n";
-            
+            BinaryOperator *BO = dyn_cast<BinaryOperator>(Instr);
 
-            //if it is constant both left and right, then apply given operation on them
-            if (IsConstantInt(Instr->getOperand(0)) && IsConstantInt(Instr->getOperand(1))) {
-                outs() << "2 const values" << "\n";
-                int ValueLeft = GetConstantInt(Instr->getOperand(0)),
-                    ValueRight = GetConstantInt(Instr->getOperand(1));
-                Value *Constant = nullptr;
+            // 5.
+
+            IRBuilder Builder(Instr);
 
 
-                if (isa<AddOperator>(Instr)) {
-                    //case5: add X, X is represented as (X*2) => (X << 1)
-                    if(Instr->getOperand(0) == Instr->getOperand(1)){
-                        Value *X = Instr->getOperand(0);
-                        BinaryOperator *NewInst = BinaryOperator::CreateShl(X, ConstantInt::get(X->getType(), 1));
-                        Instr->replaceAllUsesWith(NewInst);
-                        InstructionsToRemove.push_back(Instr);
-                        // Instr->eraseFromParent();//dodati u listu Instr a ne brisati
+            if(BO->getOpcode() == Instruction::Add) {
+
+                Value *a = BO->getOperand(0);
+                Value *b = BO->getOperand(1);
+
+                Value *ptrOperand1 = nullptr;
+                Value *ptrOperand2 = nullptr;
+
+                if (Instruction *I1 = dyn_cast<Instruction>(a)) {
+                    if (LoadInst *LI1 = dyn_cast<LoadInst>(I1)) {
+                        ptrOperand1 = LI1->getPointerOperand();
+                        outs() << ptrOperand1->getValueID() << "\n";
+                        outs() << ptrOperand1->getValueName() << "\n";
                     }
-                    Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft + ValueRight);
                 }
-                else if (isa<SubOperator>(Instr)) {
-                    Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft - ValueRight);
-                }
-                else if (isa<MulOperator>(Instr)) {
-                    //case6: Multiplies with a power-of-two constant argument are transformed into shifts.
-                    if(ConstantInt *C = dyn_cast<ConstantInt>(Instr->getOperand(1))){
-                        APInt Value = C->getValue();
-                        if (Value.isPowerOf2()) {
-                            Value.logBase2();
-                            BinaryOperator *NewInst = BinaryOperator::CreateShl(Instr->getOperand(0), ConstantInt::get(Instr->getOperand(0)->getType(), Value));
-                            Instr->replaceAllUsesWith(NewInst);
-                            InstructionsToRemove.push_back(Instr);
-                            // Instr->eraseFromParent(); // //dodati u listu Instr a ne brisati
-                        }
+
+                if (Instruction *I2 = dyn_cast<Instruction>(b)) {
+                    if (LoadInst *LI2 = dyn_cast<LoadInst>(I2)) {
+                        Value *ptrOperand2 = LI2->getPointerOperand();
+                        outs() << ptrOperand2->getValueID() << "\n";
+                        outs() << ptrOperand2->getValueName() << "\n";
                     }
-                    Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft * ValueRight);
-                }
-                else if (isa<SDivOperator>(Instr)) {
-                    Constant = ConstantInt::get(Type::getInt32Ty(Instr->getContext()), ValueLeft / ValueRight);
                 }
 
-                if (Constant != nullptr) {
-                    Instr->replaceAllUsesWith(Constant);
-                }
-            }else if (Constant *C = dyn_cast<Constant>(Instr->getOperand(0))) {
-                // outs() << "stigao u case1" << "\n";
-                // outs() << *(Instr->getOperand(0)) << "\n";
+                // ovde treba naci uslov po kom ih treba uporediti, da bi se izvrisila ova zamena
+                Value *shiftedX = Builder.CreateShl(a, ConstantInt::get(a->getType(), 1));
+                BO->replaceAllUsesWith(shiftedX);
+                InstructionsToRemove.push_back(BO);
+                return;
 
-                //case 1 - move constant operands of binary operation on RHS
-                Instr->setOperand(0, Instr->getOperand(1));
-                Instr->setOperand(1, C);
+
+            }
+
+
+            // 1.
+            if (Constant *C = dyn_cast<Constant>(Instr->getOperand(0))) {
+                switch (BO->getOpcode()) {
+                    case Instruction::Add:
+                        Instr->setOperand(0, Instr->getOperand(1));
+                        Instr->setOperand(1, C);
+                        break;
+                        Instr->setOperand(0, Instr->getOperand(1));
+                        Instr->setOperand(1, C);
+                        break;
+                    default:
+                        break;
+                }
+
             }
         }
 
 
-        void HandleCmp(Instruction *Instr)
+        void HandleCmp(Instruction *I)
         {
-            outs() << "compare" << "\n";
-            if (IsConstantInt(Instr->getOperand(0)) && IsConstantInt(Instr->getOperand(1))) {
-                ICmpInst *Cmp = dyn_cast<ICmpInst>(Instr);
+            if (ICmpInst *CI = dyn_cast<ICmpInst>(I)) {
+                Value *op0 = CI->getOperand(0);
+                Value *op1 = CI->getOperand(1);
+                CmpInst::Predicate pred = CI->getPredicate();
+                CmpInst::Predicate newPred = CmpInst::BAD_ICMP_PREDICATE;
 
-                int ValueLeft = GetConstantInt(Instr->getOperand(0)),
-                    ValueRight = GetConstantInt(Instr->getOperand(1));
+                IRBuilder Builder(I);
 
+                switch (pred) {
+                    case ICmpInst::ICMP_EQ:
+                    case ICmpInst::ICMP_NE:
+                        break;
+                    case ICmpInst::ICMP_ULT:
+                    case ICmpInst::ICMP_UGT:
+                    case ICmpInst::ICMP_ULE:
+                    case ICmpInst::ICMP_UGE:
+                        newPred = pred == ICmpInst::ICMP_ULT || pred == ICmpInst::ICMP_UGT
+                                ? CmpInst::ICMP_NE
+                                : CmpInst::ICMP_EQ;
 
-                ConstantInt *BooleanValue = nullptr;
-                auto Pred = Cmp->getPredicate();
-
-                if (Pred == ICmpInst::ICMP_EQ) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft == ValueRight);
-                }
-                else if (Pred == ICmpInst::ICMP_NE) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft != ValueRight);
-                }
-                else if (Pred == ICmpInst::ICMP_SGT) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft > ValueRight);
-                }
-                else if (Pred == ICmpInst::ICMP_SLT) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft < ValueRight);
-                }
-                else if (Pred == ICmpInst::ICMP_SGE) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft >= ValueRight);
-                }
-                else if (Pred == ICmpInst::ICMP_SLE) {
-                    BooleanValue = ConstantInt::get(Type::getInt1Ty(Instr->getContext()), ValueLeft <= ValueRight);
+                        break;
+                    case ICmpInst::ICMP_SLT:
+                    case ICmpInst::ICMP_SGT:
+                    case ICmpInst::ICMP_SLE:
+                    case ICmpInst::ICMP_SGE:
+                        newPred = pred == ICmpInst::ICMP_SLT || pred == ICmpInst::ICMP_SGT
+                                ? CmpInst::ICMP_NE
+                                : CmpInst::ICMP_EQ;
+                        break;
+                    default:
+                        break;
                 }
 
-                if (BooleanValue != nullptr) {
-                    Instr->replaceAllUsesWith(BooleanValue);
-                }            
+                Value *newCI = nullptr;
+                if(newPred == CmpInst::ICMP_EQ) {
+                    newCI = Builder.CreateICmpEQ(op0, op1);
+
+                }
+                else if(newPred == CmpInst::ICMP_NE){
+                    newCI = Builder.CreateICmpNE(op0, op1);
+                }
+                else {
+                    printf("...\n");
+                }
+
+                if(newCI) {
+                    CI->replaceAllUsesWith(newCI);
+                    InstructionsToRemove.push_back(CI);
+                }
+
             }
+
+
         }
 
 
+        /*
         void HandleBranch(Instruction *Instr)
         {
             outs() << "branch" << "\n";
@@ -169,7 +194,7 @@ namespace {
                 }
             }
         }
-
+        */
 
         void IterateThroughFunction(Function &F)
         {
@@ -186,9 +211,11 @@ namespace {
                     else if (IsCmp(&Instr)) {
                         HandleCmp(&Instr);
                     }
+                    /*
                     else if (IsBranch(&Instr)) {
                         HandleBranch(&Instr);
                     }
+                    */
                 }
             }
 
@@ -198,11 +225,11 @@ namespace {
         }
 
         bool runOnFunction(Function &F) override {
-        
+            
             IterateThroughFunction(F);
-        
+
             return true;
-	}
+        }
     }; // end of struct Hello
 }  // end of anonymous namespace
 
