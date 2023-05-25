@@ -4,7 +4,10 @@ int main() {
   int a = 1;
   int b = 2;
   
-  a = b + b;
+  int c = b + b;
+  int d = a*8;
+  int e = a*7;
+  int f = 16*a;
   
   /*
   a = 5 + b;

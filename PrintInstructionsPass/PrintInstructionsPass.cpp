@@ -60,9 +60,7 @@ namespace {
             BinaryOperator *BO = dyn_cast<BinaryOperator>(Instr);
 
             // 5.
-
             IRBuilder Builder(Instr);
-
 
             if(BO->getOpcode() == Instruction::Add) {
 
@@ -89,22 +87,49 @@ namespace {
                 }
 
                 // ovde treba naci uslov po kom ih treba uporediti, da bi se izvrisila ova zamena
-                Value *shiftedX = Builder.CreateShl(a, ConstantInt::get(a->getType(), 1));
-                BO->replaceAllUsesWith(shiftedX);
-                InstructionsToRemove.push_back(BO);
-                return;
+
+                // if(?){
+                    outs() << "usao" << "\n";
+                    Value *shiftedX = Builder.CreateShl(a, ConstantInt::get(a->getType(), 1));
+                    BO->replaceAllUsesWith(shiftedX);
+                    InstructionsToRemove.push_back(Instr);
+                    return;
+                // }
+            }else if(BO->getOpcode() == Instruction::Mul){//6
+                
+                Value *operand1 = BO->getOperand(0);
+                Value *operand2 = BO->getOperand(1);
 
 
+                // Check if one of the operands is a constant and it is a power of two
+                ConstantInt *constOp = dyn_cast<ConstantInt>(operand1);
+                if (!constOp || !constOp->getValue().isPowerOf2())
+                    constOp = dyn_cast<ConstantInt>(operand2);
+                if (!constOp || !constOp->getValue().isPowerOf2())
+                    return;
+
+                // Get the log base 2 of the constant
+                unsigned int shiftAmount = constOp->getValue().logBase2();
+
+                // Create a shift instruction
+                Value *shiftInstr = Builder.CreateShl(operand1, shiftAmount);
+                
+                // Replace the original multiplication instruction with the shift instruction
+                Instr->replaceAllUsesWith(shiftInstr);
+                InstructionsToRemove.push_back(Instr);
             }
 
 
             // 1.
             if (Constant *C = dyn_cast<Constant>(Instr->getOperand(0))) {
+                outs() << "prvi konst" << "\n";
                 switch (BO->getOpcode()) {
                     case Instruction::Add:
                         Instr->setOperand(0, Instr->getOperand(1));
                         Instr->setOperand(1, C);
                         break;
+                    case Instruction::Mul:
+                        outs() << "zamena mesta mnozenje" << "\n";
                         Instr->setOperand(0, Instr->getOperand(1));
                         Instr->setOperand(1, C);
                         break;
