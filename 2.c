@@ -4,9 +4,8 @@ int main() {
   int a = 1;
   int b = 2;
   
-  int c = a + a;
-  int d = c * 4;
-  int e = 4 * d; 
+  int c = 3 + a;
+  int d = 5 * c;
 
   return 0;
 }
